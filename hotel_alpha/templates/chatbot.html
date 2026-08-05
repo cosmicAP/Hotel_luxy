@@ -1,0 +1,80 @@
+<div class="chat-widget">
+    <button class="chat-toggle" id="chatToggle" title="Chat with us">&#128172;</button>
+    <div class="chat-window" id="chatWindow">
+        <div class="chat-header">
+            <span>&#129302; Hotel Assistant</span>
+            <button class="close-btn" id="chatClose">&times;</button>
+        </div>
+        <div class="chat-body" id="chatBody">
+            <div class="chat-msg bot">Hi there! &#128075; Ask me anything about our hotels. I can help you find the perfect stay!</div>
+        </div>
+        <div class="chat-input-area">
+            <input type="text" id="chatInput" placeholder="Type a message..." autocomplete="off">
+            <button id="chatSend">Send</button>
+        </div>
+    </div>
+</div>
+
+<script>
+(function() {
+    var toggle = document.getElementById('chatToggle');
+    var windowEl = document.getElementById('chatWindow');
+    var close = document.getElementById('chatClose');
+    var input = document.getElementById('chatInput');
+    var send = document.getElementById('chatSend');
+    var body = document.getElementById('chatBody');
+
+    toggle.addEventListener('click', function() {
+        windowEl.classList.toggle('open');
+    });
+
+    close.addEventListener('click', function() {
+        windowEl.classList.remove('open');
+    });
+
+    function addMessage(text, role) {
+        var div = document.createElement('div');
+        div.className = 'chat-msg ' + role;
+        div.textContent = text;
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+        return div;
+    }
+
+    function addLoadingMsg() {
+        var div = document.createElement('div');
+        div.className = 'chat-msg bot loading';
+        div.textContent = 'Thinking...';
+        body.appendChild(div);
+        body.scrollTop = body.scrollHeight;
+        return div;
+    }
+
+    async function sendMessage() {
+        var msg = input.value.trim();
+        if (!msg) return;
+        input.value = '';
+        addMessage(msg, 'user');
+        var loading = addLoadingMsg();
+
+        try {
+            var resp = await fetch('/api/chatbot/', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ message: msg })
+            });
+            var data = await resp.json();
+            loading.remove();
+            addMessage(data.reply || data.error || 'Something went wrong.', 'bot');
+        } catch (e) {
+            loading.remove();
+            addMessage('Connection error. Please try again.', 'bot');
+        }
+    }
+
+    send.addEventListener('click', sendMessage);
+    input.addEventListener('keydown', function(e) {
+        if (e.key === 'Enter') sendMessage();
+    });
+})();
+</script>

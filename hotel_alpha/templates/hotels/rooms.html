@@ -1,0 +1,62 @@
+{% extends 'base.html' %}
+{% block title %}Rooms at {{ hotel.name }}{% endblock %}
+
+{% block content %}
+<div class="main">
+    <a href="{% url 'home_allo' %}" class="back-link">&#8592; Back to Hotels</a>
+
+    <h1 class="section-title">{{ hotel.name }}</h1>
+    <p style="color:var(--text-light);font-size:1.05rem;margin-bottom:8px;">&#128205; {{ hotel.city }} | {{ hotel.rating }} &#9733; | &#8377;{{ hotel.rate_per_night }}/night</p>
+    <p style="color:var(--text-light);margin-bottom:32px;">{{ hotel.description }}</p>
+
+    {% if not rooms %}
+    <div class="empty-state">
+        <div class="icon">&#128719;</div>
+        <h3>No Rooms Available</h3>
+        <p>This hotel currently has no rooms listed. Check back later!</p>
+        <a href="{% url 'home_allo' %}" class="btn-submit" style="display:inline-block;width:auto;padding:12px 30px;">Browse Other Hotels</a>
+    </div>
+    {% else %}
+    <div class="hotel-grid">
+        {% for room in rooms %}
+        <div class="hotel-card">
+            <div class="card-body">
+                <div style="display:flex;justify-content:space-between;align-items:start;margin-bottom:12px;">
+                    <h3>{{ room.room_type }}</h3>
+                    <span style="background:var(--bg);padding:4px 10px;border-radius:20px;font-size:0.82rem;font-weight:700;color:var(--text-light);">#{{ room.room_no }}</span>
+                </div>
+                <div class="room-meta-grid">
+                    <div class="room-meta-item">
+                        <div class="icon">&#128101;</div>
+                        <div class="label">Capacity</div>
+                        <div class="value">{{ room.capacity }} Guest{{ room.capacity|pluralize }}</div>
+                    </div>
+                    <div class="room-meta-item">
+                        <div class="icon">&#10052;</div>
+                        <div class="label">AC</div>
+                        <div class="value">{% if room.ac %}Yes{% else %}No{% endif %}</div>
+                    </div>
+                    <div class="room-meta-item">
+                        <div class="icon">&#128176;</div>
+                        <div class="label">Price</div>
+                        <div class="value">&#8377;{{ room.price|default:room.hotel.rate_per_night }}</div>
+                    </div>
+                </div>
+                {% if room.amenities %}
+                <div style="display:flex;flex-wrap:wrap;gap:6px;margin-bottom:16px;">
+                    {% for amenity in room.amenities %}
+                    <span style="background:var(--bg-dark);padding:4px 10px;border-radius:20px;font-size:0.78rem;color:var(--text);">{{ amenity }}</span>
+                    {% endfor %}
+                </div>
+                {% endif %}
+                {% if room.description %}
+                <p style="color:var(--text-light);font-size:0.88rem;margin-bottom:16px;">{{ room.description }}</p>
+                {% endif %}
+                <a href="{% url 'book_room' room.id %}" class="btn-submit" style="display:block;text-align:center;">Book This Room</a>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

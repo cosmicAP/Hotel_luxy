@@ -1,0 +1,13 @@
+__pycache__/
+*.py[cod]
+*$py.class
+*.pyc
+.vscode/
+.idea/
+db.sqlite3
+media/
+.env
+staticfiles/
+1V/
+*.db
+simpe_hotel_backup/

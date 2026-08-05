@@ -1,0 +1,47 @@
+{% extends 'base.html' %}
+{% block title %}Sign Up{% endblock %}
+
+{% block content %}
+<div class="main">
+    <form method="POST" class="auth-form" novalidate>
+        {% csrf_token %}
+        <h2>Create Account</h2>
+        <p class="subtitle">Join Simple Hotel and start booking your stays</p>
+
+        {% if form.errors %}
+        <div class="alert alert-error">
+            <strong>Please correct the errors:</strong>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div style="font-weight:400;margin-top:4px;">{{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="id_username">Username</label>
+            {{ form.username }}
+            {% if not form.username.errors %}
+            <span class="helptext">{{ form.username.help_text }}</span>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="id_password1">Password</label>
+            {{ form.password1 }}
+            {% if not form.password1.errors %}
+            <span class="helptext">{{ form.password1.help_text }}</span>
+            {% endif %}
+        </div>
+        <div class="form-group">
+            <label for="id_password2">Confirm Password</label>
+            {{ form.password2 }}
+        </div>
+
+        <button type="submit" class="btn-submit">Create Account</button>
+        <div class="form-footer">
+            Already have an account? <a href="{% url 'login' %}">Log in</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

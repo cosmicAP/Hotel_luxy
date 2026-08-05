@@ -1,0 +1,93 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block full_width %}
+<section class="hero">
+    <h1>Find Your Perfect Stay</h1>
+    <p>Discover handpicked hotels with premium amenities at unbeatable prices</p>
+    <form method="GET" action="{% url 'home_allo' %}" class="search-box">
+        <input type="text" name="q" value="{{ query }}" placeholder="Search hotels or city...">
+        <select name="city">
+            <option value="">All Cities</option>
+            {% for c in cities %}
+            <option value="{{ c }}" {% if city_filter == c %}selected{% endif %}>{{ c }}</option>
+            {% endfor %}
+        </select>
+        <button type="submit">&#128269; Search</button>
+    </form>
+    <div class="sort-options">
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}sort=-rating" class="{% if sort == '-rating' %}active{% endif %}">Top Rated</a>
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}sort=rate_per_night" class="{% if sort == 'rate_per_night' %}active{% endif %}">Price: Low to High</a>
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}sort=-rate_per_night" class="{% if sort == '-rate_per_night' %}active{% endif %}">Price: High to Low</a>
+        <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}sort=name" class="{% if sort == 'name' %}active{% endif %}">Name A-Z</a>
+    </div>
+</section>
+{% endblock %}
+
+{% block content %}
+<div class="main" style="padding-top: 24px;">
+    {% if query or city_filter %}
+    <p style="margin-bottom:20px;color:var(--text-light);">
+        {% if hotels.paginator.count %}
+            Found {{ hotels.paginator.count }} hotel(s)
+            {% if query %} for "{{ query }}"{% endif %}
+            {% if city_filter %} in {{ city_filter }}{% endif %}
+        {% endif %}
+    </p>
+    {% else %}
+    <h2 class="section-title">Available Hotels</h2>
+    <p class="section-subtitle">Browse through our curated collection</p>
+    {% endif %}
+
+    {% if not hotels %}
+    <div class="empty-state">
+        <div class="icon">&#127968;</div>
+        <h3>No Hotels Found</h3>
+        <p>Try adjusting your search or browse all available hotels.</p>
+        <a href="{% url 'home_allo' %}" class="btn-submit" style="display:inline-block;width:auto;padding:12px 30px;">Show All Hotels</a>
+    </div>
+    {% else %}
+    <div class="hotel-grid">
+        {% for hotel in hotels %}
+        <div class="hotel-card">
+            <div class="card-img">
+                {% if hotel.image %}
+                <img src="{{ hotel.image.url }}" alt="{{ hotel.name }}" loading="lazy">
+                {% else %}
+                <span class="no-img">&#127968;</span>
+                {% endif %}
+                <span class="card-badge">{{ hotel.rating }} &#9733;</span>
+            </div>
+            <div class="card-body">
+                <h3>{{ hotel.name }}</h3>
+                <p class="city">&#128205; {{ hotel.city }}</p>
+                <p class="desc">{{ hotel.description|truncatechars:120 }}</p>
+                <div class="card-footer">
+                    <span class="price">&#8377;{{ hotel.rate_per_night }} <small style="font-weight:400;color:var(--text-light);">/ night</small></span>
+                    <a href="{% url 'hotel_rooms' hotel.id %}" class="btn">View Rooms</a>
+                </div>
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+
+    {% if hotels.paginator.num_pages > 1 %}
+    <div class="pagination">
+        {% if hotels.has_previous %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}page={{ hotels.previous_page_number }}">&laquo; Prev</a>
+        {% endif %}
+        {% for num in hotels.paginator.page_range %}
+            {% if num == hotels.number %}
+                <span class="current">{{ num }}</span>
+            {% elif num > hotels.number|add:'-3' and num < hotels.number|add:'3' %}
+                <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if hotels.has_next %}
+            <a href="?{% if query %}q={{ query }}&{% endif %}{% if city_filter %}city={{ city_filter }}&{% endif %}{% if sort %}sort={{ sort }}&{% endif %}page={{ hotels.next_page_number }}">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

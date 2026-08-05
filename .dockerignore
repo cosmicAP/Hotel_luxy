@@ -1,0 +1,17 @@
+__pycache__/
+*.py[cod]
+*$py.class
+.vscode/
+.idea/
+db.sqlite3
+media/
+.env
+.env.example
+venv/
+env/
+1V/
+.git/
+*.md
+staticfiles/
+simpe_hotel_backup/
+docker-compose.yml

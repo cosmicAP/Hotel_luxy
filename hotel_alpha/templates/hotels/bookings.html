@@ -1,0 +1,84 @@
+{% extends 'base.html' %}
+{% block title %}My Bookings{% endblock %}
+
+{% block content %}
+<div class="main">
+    <a href="{% url 'home_allo' %}" class="back-link">&#8592; Back to Hotels</a>
+    <h1 class="section-title">My Bookings</h1>
+    <p class="section-subtitle">Track and manage your reservations</p>
+
+    <div class="filter-bar">
+        <a href="?status=" class="{% if not status_filter %}active{% endif %}">All</a>
+        <a href="?status=CONFIRMED" class="{% if status_filter == 'CONFIRMED' %}active{% endif %}">Active</a>
+        <a href="?status=CANCELLED" class="{% if status_filter == 'CANCELLED' %}active{% endif %}">Cancelled</a>
+        <a href="?status=COMPLETED" class="{% if status_filter == 'COMPLETED' %}active{% endif %}">Completed</a>
+    </div>
+
+    {% if not bookings %}
+    <div class="empty-state">
+        <div class="icon">&#128196;</div>
+        <h3>No Bookings Found</h3>
+        <p>You haven't made any bookings yet. Start exploring hotels!</p>
+        <a href="{% url 'home_allo' %}" class="btn-submit" style="display:inline-block;width:auto;padding:12px 30px;">Browse Hotels</a>
+    </div>
+    {% else %}
+    <div style="overflow-x:auto;">
+        <table class="bookings-table">
+            <thead>
+                <tr>
+                    <th>Hotel</th>
+                    <th>Room</th>
+                    <th>Guests</th>
+                    <th>Check-in</th>
+                    <th>Check-out</th>
+                    <th>Cost</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for booking in bookings %}
+                <tr>
+                    <td><strong>{{ booking.room.hotel.name }}</strong><br><small style="color:var(--text-light);">{{ booking.room.hotel.city }}</small></td>
+                    <td>#{{ booking.room.room_no }}<br><small style="color:var(--text-light);">{{ booking.room.room_type }}</small></td>
+                    <td>{{ booking.no_of_people }}</td>
+                    <td>{{ booking.check_in_date }}</td>
+                    <td>{{ booking.check_out_date }}</td>
+                    <td><strong>&#8377;{{ booking.total_cost }}</strong></td>
+                    <td>
+                        <span class="badge {% if booking.status == 'CONFIRMED' %}badge-confirmed{% elif booking.status == 'CANCELLED' %}badge-cancelled{% else %}badge-completed{% endif %}">
+                            {{ booking.status }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if booking.status == 'CONFIRMED' %}
+                        <a href="{% url 'cancel_booking' booking.id %}" class="btn-sm btn-sm-danger"
+                           onclick="return confirm('Are you sure you want to cancel this booking?');">Cancel</a>
+                        {% endif %}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+    {% if bookings.paginator.num_pages > 1 %}
+    <div class="pagination">
+        {% if bookings.has_previous %}
+            <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ bookings.previous_page_number }}">&laquo; Prev</a>
+        {% endif %}
+        {% for num in bookings.paginator.page_range %}
+            {% if num == bookings.number %}
+                <span class="current">{{ num }}</span>
+            {% elif num > bookings.number|add:'-3' and num < bookings.number|add:'3' %}
+                <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ num }}">{{ num }}</a>
+            {% endif %}
+        {% endfor %}
+        {% if bookings.has_next %}
+            <a href="?{% if status_filter %}status={{ status_filter }}&{% endif %}page={{ bookings.next_page_number }}">Next &raquo;</a>
+        {% endif %}
+    </div>
+    {% endif %}
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,64 @@
+{% extends 'base.html' %}
+{% block title %}Book Room {{ room.room_no }}{% endblock %}
+
+{% block content %}
+<div class="main">
+    <a href="{% url 'hotel_rooms' room.hotel.id %}" class="back-link">&#8592; Back to {{ room.hotel.name }}</a>
+
+    <div class="booking-header">
+        <h1>Book Your Room</h1>
+        <p class="room-info">Room #{{ room.room_no }} — {{ room.room_type }} at {{ room.hotel.name }}</p>
+    </div>
+
+    <form method="POST" class="form-card" novalidate>
+        {% csrf_token %}
+
+        {% if form.errors %}
+        <div class="alert alert-error" style="margin-bottom:20px;">
+            <strong>Please correct the following errors:</strong>
+            {% for field in form %}
+                {% for error in field.errors %}
+                <div style="font-weight:400;margin-top:4px;">{{ field.label }}: {{ error }}</div>
+                {% endfor %}
+            {% endfor %}
+            {% for error in form.non_field_errors %}
+                <div style="font-weight:400;margin-top:4px;">{{ error }}</div>
+            {% endfor %}
+        </div>
+        {% endif %}
+
+        <div class="form-group">
+            <label for="id_user_name">Full Name</label>
+            {{ form.user_name }}
+        </div>
+        <div class="form-group">
+            <label for="id_user_email">Email</label>
+            {{ form.user_email }}
+        </div>
+        <div class="form-group">
+            <label for="id_user_phone_no">Phone Number</label>
+            {{ form.user_phone_no }}
+        </div>
+        <div class="form-group">
+            <label for="id_no_of_people">Number of Guests</label>
+            {{ form.no_of_people }}
+            <span class="helptext">Max capacity: {{ room.capacity }} guest(s)</span>
+        </div>
+        <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+            <div class="form-group">
+                <label for="id_check_in_date">Check-in Date</label>
+                {{ form.check_in_date }}
+            </div>
+            <div class="form-group">
+                <label for="id_check_out_date">Check-out Date</label>
+                {{ form.check_out_date }}
+            </div>
+        </div>
+
+        <div style="display:flex;gap:12px;margin-top:10px;">
+            <button type="submit" class="btn-submit" style="flex:2;">Confirm Booking</button>
+            <a href="{% url 'hotel_rooms' room.hotel.id %}" style="flex:1;display:flex;align-items:center;justify-content:center;border:2px solid var(--border);border-radius:var(--radius-sm);font-weight:600;font-size:0.9rem;transition:var(--transition);">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

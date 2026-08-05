@@ -1,0 +1,16 @@
+services:
+  web:
+    build: .
+    container_name: simple_hotel
+    ports:
+      - "80:80"
+    env_file:
+      - .env
+    volumes:
+      - sqlite_data:/app
+      - media_data:/app/media
+    restart: unless-stopped
+
+volumes:
+  sqlite_data:
+  media_data:
