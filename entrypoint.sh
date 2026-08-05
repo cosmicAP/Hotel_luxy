@@ -4,6 +4,9 @@ set -e
 echo "Running database migrations..."
 python manage.py migrate --noinput
 
+echo "Seeding sample hotel data..."
+python manage.py seed_data
+
 echo "Ensuring admin user exists..."
 python manage.py ensure_superuser
 

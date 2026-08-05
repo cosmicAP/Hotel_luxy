@@ -70,7 +70,7 @@
     {% block full_width %}{% endblock %}
     {% block content %}{% endblock %}
 
-    {% include 'chatbot.html' %}
+    {% block after_content %}{% endblock %}
 
     <footer class="footer">
         <p>&copy; {% now "Y" %} <a href="{% url 'home_allo' %}">Simple Hotel</a>. All rights reserved.</p>

@@ -85,7 +85,6 @@ def home(request):
     return render(request, "hotels/home.html", context)
 
 
-@login_required
 def hotel_rooms(request, hotel_id):
     hotel = get_object_or_404(Hotel, id=hotel_id)
     rooms = hotel.rooms.all()
