@@ -67,7 +67,10 @@ DATABASES = {
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
     import re
-    parsed = re.match(r'postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+):?(\d+)?/(.+)', DATABASE_URL)
+    parsed = re.match(
+        r'postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+):?(\d+)?/([^?]+)',
+        DATABASE_URL
+    )
     if parsed:
         DATABASES['default'] = {
             'ENGINE': 'django.db.backends.postgresql',
@@ -75,8 +78,9 @@ if DATABASE_URL:
             'USER': parsed.group(1),
             'PASSWORD': parsed.group(2),
             'HOST': parsed.group(3),
-            'PORT': parsed.group(4) or 5432,
+            'PORT': int(parsed.group(4)) if parsed.group(4) else 5432,
             'CONN_MAX_AGE': 600,
+            'OPTIONS': {'sslmode': 'require'},
         }
 
 AUTH_PASSWORD_VALIDATORS = [
