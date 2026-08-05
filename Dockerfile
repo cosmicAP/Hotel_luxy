@@ -18,7 +18,7 @@ RUN mkdir -p /app/media && chmod 755 /app/media
 EXPOSE 80
 
 CMD gunicorn hotel_project.wsgi:application \
-    --bind 0.0.0.0:80 \
+    --bind 0.0.0.0:${PORT:-80} \
     --workers 3 \
     --threads 2 \
     --access-logfile - \
