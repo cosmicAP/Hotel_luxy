@@ -63,10 +63,20 @@ DATABASES = {
     }
 }
 
-import dj_database_url
 DATABASE_URL = os.environ.get('DATABASE_URL')
 if DATABASE_URL:
-    DATABASES['default'] = dj_database_url.parse(DATABASE_URL, conn_max_age=600)
+    import re
+    parsed = re.match(r'postgres(?:ql)?://([^:]+):([^@]+)@([^:/]+):?(\d+)?/(.+)', DATABASE_URL)
+    if parsed:
+        DATABASES['default'] = {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': parsed.group(5),
+            'USER': parsed.group(1),
+            'PASSWORD': parsed.group(2),
+            'HOST': parsed.group(3),
+            'PORT': parsed.group(4) or 5432,
+            'CONN_MAX_AGE': 600,
+        }
 
 AUTH_PASSWORD_VALIDATORS = [
     {
