@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>{% block title %}Simple Hotel{% endblock %}</title>
+    <title>{% block title %}Hotel Lux{% endblock %}</title>
     <link rel="stylesheet" href="{% static 'hotel_alpha/style.css' %}">
     <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,500;0,600;0,700;0,800;1,400;1,500;1,600;1,700;1,800&display=swap" rel="stylesheet">
     {% block extra_head %}{% endblock %}
@@ -13,7 +13,7 @@
     <nav class="navbar">
         <div class="nav-inner">
             <a href="{% url 'home_allo' %}" class="logo">
-                <span class="icon">&#127968;</span> Simple Hotel
+                <span class="icon">&#127968;</span> Hotel Lux
             </a>
             <button class="hamburger" onclick="document.querySelector('.mobile-menu').classList.toggle('open')">&#9776;</button>
             <div class="nav-links">
@@ -73,7 +73,7 @@
     {% block after_content %}{% endblock %}
 
     <footer class="footer">
-        <p>&copy; {% now "Y" %} <a href="{% url 'home_allo' %}">Simple Hotel</a>. All rights reserved.</p>
+        <p>&copy; {% now "Y" %} <a href="{% url 'home_allo' %}">Hotel Lux</a>. All rights reserved.</p>
     </footer>
 
     <script>

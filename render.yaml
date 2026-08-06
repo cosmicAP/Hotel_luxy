@@ -1,6 +1,6 @@
 services:
   - type: web
-    name: simple-hotel
+    name: hotel-lux
     env: docker
     plan: free
     healthCheckPath: /

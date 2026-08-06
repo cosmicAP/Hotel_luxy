@@ -3,6 +3,9 @@
 
 {% block full_width %}
 <section class="hero">
+    <div class="hero-lines">
+        <span></span><span></span><span></span><span></span>
+    </div>
     <h1>Find Your Perfect Stay</h1>
     <p>Discover handpicked hotels with premium amenities at unbeatable prices</p>
     <form method="GET" action="{% url 'home_allo' %}" class="search-box">
@@ -56,11 +59,10 @@
                 {% else %}
                 <span class="no-img">&#127968;</span>
                 {% endif %}
-                <span class="card-badge">{{ hotel.rating }} &#9733;</span>
             </div>
             <div class="card-body">
                 <h3>{{ hotel.name }}</h3>
-                <p class="city">&#128205; {{ hotel.city }}</p>
+                <p class="city">&#128205; {{ hotel.city }} &middot; <span class="badge" style="font-size:0.75rem;">{{ hotel.rating }} &#9733;</span></p>
                 <p class="desc">{{ hotel.description|truncatechars:120 }}</p>
                 <div class="card-footer">
                     <span class="price">&#8377;{{ hotel.rate_per_night }} <small style="font-weight:400;color:var(--text-light);">/ night</small></span>

@@ -1,7 +1,7 @@
 #!/bin/bash
 set -e
 
-echo "=== Simple Hotel Setup ==="
+echo "=== Hotel Lux Setup ==="
 
 if ! command -v docker &> /dev/null; then
     echo "[*] Installing Docker..."

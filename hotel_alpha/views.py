@@ -106,7 +106,7 @@ def book_room(request, room_id):
 
             try:
                 send_mail(
-                    subject='Booking Confirmation - Simple Hotel',
+                    subject='Booking Confirmation - Hotel Lux',
                     message=(
                         f"Hi {booking.user_name},\n\n"
                         f"Your booking for Room #{booking.room.room_no} ({booking.room.room_type}) "
@@ -115,7 +115,7 @@ def book_room(request, room_id):
                         f"Check-out: {booking.check_out_date}\n"
                         f"Guests: {booking.no_of_people}\n"
                         f"Total: ₹{booking.total_cost}\n\n"
-                        f"Thank you for choosing Simple Hotel!"
+                        f"Thank you for choosing Hotel Lux!"
                     ),
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[booking.user_email],
@@ -215,7 +215,7 @@ def password_reset_request(request):
                     f"/password-reset/{uid}/{token}/"
                 )
                 send_mail(
-                    subject='Password Reset - Simple Hotel',
+                    subject='Password Reset - Hotel Lux',
                     message=f"Click the link below to reset your password:\n\n{reset_url}",
                     from_email=settings.DEFAULT_FROM_EMAIL,
                     recipient_list=[email],
@@ -282,7 +282,7 @@ def chatbot_api(request):
             hotel_lines.append("No hotels available.")
 
         system_prompt = (
-            "You are a helpful hotel booking assistant for 'Simple Hotel.' "
+            "You are a helpful hotel booking assistant for 'Hotel Lux.' "
             "You MUST answer using ONLY the hotel data below. "
             "If a user asks about a city not in the list, say we don't have hotels there. "
             "Be concise, friendly, and suggest alternatives when possible.\n\n"
