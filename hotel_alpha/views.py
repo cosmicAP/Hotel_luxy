@@ -3,22 +3,35 @@ from django.contrib.auth.decorators import login_required
 from django.shortcuts import render, redirect
 from django.contrib import messages
 from django.core.paginator import Paginator, EmptyPage, PageNotAnInteger
+from django.db import transaction
 from django.db.models import Q
 from django.core.mail import send_mail
 from django.http import JsonResponse
-from django.views.decorators.csrf import csrf_exempt
+from django.views.decorators.csrf import ensure_csrf_cookie
+from django.views.decorators.http import require_POST
 from django.conf import settings
 from django.contrib.auth import login, logout, authenticate, update_session_auth_hash
 from django.contrib.auth.forms import AuthenticationForm, UserCreationForm, PasswordChangeForm, PasswordResetForm, SetPasswordForm
 from django.contrib.auth.tokens import default_token_generator
 from django.utils.http import urlsafe_base64_encode, urlsafe_base64_decode
 from django.utils.encoding import force_bytes, force_str
+from django.utils import timezone
 from django.contrib.auth.models import User
+from datetime import timedelta
 import json
 
 from openai import OpenAI
-from .models import Hotel, Room, Booking
+from .models import Hotel, Room, Booking, ApiRateLimit
 from .forms import BookingForm
+
+SORT_WHITELIST = {
+    'name', '-name', 'city', '-city', 'rating', '-rating',
+    'rate_per_night', '-rate_per_night', 'created_at', '-created_at',
+}
+
+CHATBOT_RATE_LIMIT_MAX = 10
+CHATBOT_RATE_LIMIT_WINDOW_SECONDS = 60
+CHATBOT_MAX_MESSAGE_LENGTH = 500
 
 def signup_view(request):
     if request.method == "POST":
@@ -52,10 +65,13 @@ def logout_view(request):
     return redirect('login')
 
 
+@ensure_csrf_cookie
 def home(request):
     query = request.GET.get('q', '')
     city_filter = request.GET.get('city', '')
     sort = request.GET.get('sort', '-rating')
+    if sort not in SORT_WHITELIST:
+        sort = '-rating'
 
     hotels = Hotel.objects.all()
 
@@ -94,48 +110,49 @@ def hotel_rooms(request, hotel_id):
 
 @login_required
 def book_room(request, room_id):
-    room = get_object_or_404(Room, id=room_id)
+    with transaction.atomic():
+        room = get_object_or_404(Room.objects.select_for_update(), id=room_id)
 
-    if request.method == "POST":
-        form = BookingForm(request.POST, room=room)
-        if form.is_valid():
-            booking = form.save(commit=False)
-            booking.room = room
-            booking.user = request.user
-            booking.save()
+        if request.method == "POST":
+            form = BookingForm(request.POST, room=room)
+            if form.is_valid():
+                booking = form.save(commit=False)
+                booking.room = room
+                booking.user = request.user
+                booking.save()
 
-            try:
-                send_mail(
-                    subject='Booking Confirmation - Hotel Lux',
-                    message=(
-                        f"Hi {booking.user_name},\n\n"
-                        f"Your booking for Room #{booking.room.room_no} ({booking.room.room_type}) "
-                        f"at {booking.room.hotel.name} has been confirmed.\n\n"
-                        f"Check-in: {booking.check_in_date}\n"
-                        f"Check-out: {booking.check_out_date}\n"
-                        f"Guests: {booking.no_of_people}\n"
-                        f"Total: ₹{booking.total_cost}\n\n"
-                        f"Thank you for choosing Hotel Lux!"
-                    ),
-                    from_email=settings.DEFAULT_FROM_EMAIL,
-                    recipient_list=[booking.user_email],
-                    fail_silently=True,
-                )
-            except Exception as e:
-                print(f"Warning: Failed to send email: {e}")
+                try:
+                    send_mail(
+                        subject='Booking Confirmation - Hotel Lux',
+                        message=(
+                            f"Hi {booking.user_name},\n\n"
+                            f"Your booking for Room #{booking.room.room_no} ({booking.room.room_type}) "
+                            f"at {booking.room.hotel.name} has been confirmed.\n\n"
+                            f"Check-in: {booking.check_in_date}\n"
+                            f"Check-out: {booking.check_out_date}\n"
+                            f"Guests: {booking.no_of_people}\n"
+                            f"Total: ₹{booking.total_cost}\n\n"
+                            f"Thank you for choosing Hotel Lux!"
+                        ),
+                        from_email=settings.DEFAULT_FROM_EMAIL,
+                        recipient_list=[booking.user_email],
+                        fail_silently=False,
+                    )
+                except Exception as e:
+                    print(f"Warning: Failed to send email: {e}")
 
-            messages.success(request, f"Room #{booking.room.room_no} booked successfully!")
-            return redirect('bookings_dashboard')
-    else:
-        form = BookingForm(
-            initial={
-                'user_name': request.user.get_full_name() or request.user.username,
-                'user_email': request.user.email,
-            },
-            room=room,
-        )
+                messages.success(request, f"Room #{booking.room.room_no} booked successfully!")
+                return redirect('bookings_dashboard')
+        else:
+            form = BookingForm(
+                initial={
+                    'user_name': request.user.get_full_name() or request.user.username,
+                    'user_email': request.user.email,
+                },
+                room=room,
+            )
 
-    return render(request, "hotels/book_room.html", {"room": room, "form": form})
+        return render(request, "hotels/book_room.html", {"room": room, "form": form})
 
 
 @login_required
@@ -259,49 +276,83 @@ client = OpenAI(
 )
 
 
-@csrf_exempt
-def chatbot_api(request):
-    if request.method == "POST":
-        try:
-            data = json.loads(request.body)
-        except json.JSONDecodeError:
-            return JsonResponse({"error": "Invalid JSON"}, status=400)
+def _client_ip(request):
+    xff = request.META.get('HTTP_X_FORWARDED_FOR', '')
+    if xff:
+        return xff.split(',')[-1].strip()
+    return request.META.get('REMOTE_ADDR', 'unknown')
 
-        user_message = data.get("message", "").strip()
-        if not user_message:
-            return JsonResponse({"error": "Message is required"}, status=400)
 
-        hotels = Hotel.objects.all()
-        hotel_lines = []
-        if hotels.exists():
-            for h in hotels:
-                hotel_lines.append(
-                    f"- {h.name} ({h.city}) | {h.rating}★ | ₹{h.rate_per_night}/night | {h.description}"
-                )
-        else:
-            hotel_lines.append("No hotels available.")
-
-        system_prompt = (
-            "You are a helpful hotel booking assistant for 'Hotel Lux.' "
-            "You MUST answer using ONLY the hotel data below. "
-            "If a user asks about a city not in the list, say we don't have hotels there. "
-            "Be concise, friendly, and suggest alternatives when possible.\n\n"
-            "AVAILABLE HOTELS:\n" + "\n".join(hotel_lines)
+def _is_rate_limited(key, limit, window_seconds):
+    cutoff = timezone.now() - timedelta(seconds=window_seconds)
+    with transaction.atomic():
+        row, created = ApiRateLimit.objects.select_for_update().get_or_create(
+            key=key,
+            defaults={'count': 1, 'updated_at': timezone.now()},
         )
+        if created:
+            return False
+        if row.updated_at < cutoff:
+            row.count = 1
+            row.updated_at = timezone.now()
+            row.save(update_fields=['count', 'updated_at'])
+            return False
+        if row.count >= limit:
+            return True
+        row.count += 1
+        row.save(update_fields=['count'])
+        return False
 
-        try:
-            response = client.chat.completions.create(
-                model="deepseek-chat",
-                messages=[
-                    {"role": "system", "content": system_prompt},
-                    {"role": "user", "content": user_message},
-                ],
-                max_tokens=300,
-                temperature=0.7,
+
+@require_POST
+def chatbot_api(request):
+    if _is_rate_limited(
+        f"chatbot:{_client_ip(request)}",
+        CHATBOT_RATE_LIMIT_MAX,
+        CHATBOT_RATE_LIMIT_WINDOW_SECONDS,
+    ):
+        return JsonResponse({"error": "Too many requests. Please try again later."}, status=429)
+
+    try:
+        data = json.loads(request.body)
+    except json.JSONDecodeError:
+        return JsonResponse({"error": "Invalid JSON"}, status=400)
+
+    user_message = data.get("message", "").strip()
+    if not user_message:
+        return JsonResponse({"error": "Message is required"}, status=400)
+    if len(user_message) > CHATBOT_MAX_MESSAGE_LENGTH:
+        return JsonResponse({"error": "Message is too long"}, status=400)
+
+    hotels = Hotel.objects.all()
+    hotel_lines = []
+    if hotels.exists():
+        for h in hotels:
+            hotel_lines.append(
+                f"- {h.name} ({h.city}) | {h.rating}★ | ₹{h.rate_per_night}/night | {h.description}"
             )
-            bot_reply = response.choices[0].message.content
-            return JsonResponse({"reply": bot_reply})
-        except Exception as e:
-            return JsonResponse({"reply": "Sorry, I'm having trouble connecting to my brain right now. Please try again later."})
+    else:
+        hotel_lines.append("No hotels available.")
 
-    return JsonResponse({"error": "Invalid request method"}, status=405)
+    system_prompt = (
+        "You are a helpful hotel booking assistant for 'Hotel Lux.' "
+        "You MUST answer using ONLY the hotel data below. "
+        "If a user asks about a city not in the list, say we don't have hotels there. "
+        "Be concise, friendly, and suggest alternatives when possible.\n\n"
+        "AVAILABLE HOTELS:\n" + "\n".join(hotel_lines)
+    )
+
+    try:
+        response = client.chat.completions.create(
+            model="deepseek-chat",
+            messages=[
+                {"role": "system", "content": system_prompt},
+                {"role": "user", "content": user_message},
+            ],
+            max_tokens=300,
+            temperature=0.7,
+        )
+        bot_reply = response.choices[0].message.content
+        return JsonResponse({"reply": bot_reply})
+    except Exception as e:
+        return JsonResponse({"reply": "Sorry, I'm having trouble connecting to my brain right now. Please try again later."})

@@ -1,5 +1,6 @@
 from django.db import models
 from django.utils import timezone
+from django.core.validators import MinValueValidator
 
 RATING_CHOICES = [
     (1, '1 Star'),
@@ -55,7 +56,7 @@ class Booking(models.Model):
     user_email = models.EmailField()
     user_phone_no = models.CharField(max_length=15)
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='bookings')
-    no_of_people = models.IntegerField(default=1)
+    no_of_people = models.IntegerField(default=1, validators=[MinValueValidator(1)])
     check_in_date = models.DateField()
     check_out_date = models.DateField()
     status = models.CharField(max_length=20, choices=BOOKING_STATUS, default='CONFIRMED')
@@ -80,7 +81,14 @@ class Booking(models.Model):
         return f"Booking {self.id} | {self.user_name}"
 
 
+class ApiRateLimit(models.Model):
+    key = models.CharField(max_length=200, primary_key=True)
+    count = models.IntegerField(default=0)
+    updated_at = models.DateTimeField(default=timezone.now)
 
-    
+    def __str__(self):
+        return f"{self.key} | {self.count}"
+
+
 
 

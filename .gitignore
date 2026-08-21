@@ -11,3 +11,6 @@ staticfiles/
 1V/
 *.db
 simpe_hotel_backup/
+.venv/
+venv/
+env/
