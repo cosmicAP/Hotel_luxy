@@ -128,7 +128,9 @@ STATICFILES_DIRS = [BASE_DIR / 'hotel_alpha' / 'static']
 MEDIA_URL = '/media/'
 MEDIA_ROOT = BASE_DIR / 'media'
 
-if os.environ.get('CLOUDINARY_URL'):
+# Media storage: local filesystem by default so hotel images ship with the repo.
+# To switch to Cloudinary later, set MEDIA_STORAGE=cloudinary AND CLOUDINARY_URL.
+if os.environ.get('MEDIA_STORAGE') == 'cloudinary' and os.environ.get('CLOUDINARY_URL'):
     DEFAULT_FILE_STORAGE = 'cloudinary_storage.storage.MediaCloudinaryStorage'
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 

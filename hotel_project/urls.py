@@ -15,13 +15,26 @@ Including another URLconf
     2. Add a URL to urlpatterns:  path('blog/', include('blog.urls'))
 """
 from django.contrib import admin
-from django.urls import path , include
+from django.urls import path, include, re_path
 from django.conf import settings
+from django.views.static import serve
 from django.conf.urls.static import static
 
 
 urlpatterns = [
     path('admin/', admin.site.urls),
-    path('',include('hotel_alpha.urls'))
+    path('', include('hotel_alpha.urls')),
+]
 
-]+ static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+# Serve uploaded media (e.g. hotel images) from local disk.
+# Works in production too, not just DEBUG mode.
+media_storage = getattr(settings, 'DEFAULT_FILE_STORAGE', '')
+if 'cloudinary' not in media_storage:
+    urlpatterns += static(settings.MEDIA_URL, document_root=settings.MEDIA_ROOT)
+    urlpatterns += [
+        re_path(
+            r'^media/(?P<path>.*)$',
+            serve,
+            {'document_root': settings.MEDIA_ROOT},
+        )
+    ]
