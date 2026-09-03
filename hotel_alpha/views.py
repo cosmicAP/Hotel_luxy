@@ -29,8 +29,8 @@ SORT_WHITELIST = {
     'rate_per_night', '-rate_per_night', 'created_at', '-created_at',
 }
 
-CHATBOT_RATE_LIMIT_MAX = 10
-CHATBOT_RATE_LIMIT_WINDOW_SECONDS = 60
+CHATBOT_RATE_LIMIT_MAX = 7
+CHATBOT_RATE_LIMIT_WINDOW_SECONDS = 86400
 CHATBOT_MAX_MESSAGE_LENGTH = 500
 
 def signup_view(request):
